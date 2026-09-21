@@ -121,4 +121,3 @@ The browser suite uses installed Windows Edge. On another platform, set `URO3D_B
 ## Current planning boundary
 
 MPR, GPU 3D preview, measurements, and the PCNL Planner planning aid are now available. The next clinical module is physician-confirmed structure segmentation (kidneys, stones, collecting system, ribs, vessels, and adjacent organs), followed by intersection analysis. Until those masks exist, the planner deliberately cannot call a trajectory safe or best.
-
