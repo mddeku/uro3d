@@ -850,6 +850,10 @@ pre {
 .viewport-message.error {
   color: #e8af97;
 }
+.trajectory-overlay { pointer-events:none; }
+.trajectory-overlay line { stroke:#ff9f43; stroke-width:3; stroke-dasharray:8 5; filter:drop-shadow(0 0 3px #000); }
+.trajectory-overlay circle { fill:#ffd166; stroke:#3a2010; stroke-width:2; }
+.trajectory-overlay text { fill:#ffd166; font:600 11px Consolas,monospace; paint-order:stroke; stroke:#071410; stroke-width:3px; }
 .demo-badge {
   color: #bca976;
   background: #2c2a20;

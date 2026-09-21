@@ -21,6 +21,8 @@ interface State {
   reset: () => void;
   clear: () => void;
   setHidePatient: (v: boolean) => void;
+  trajectory: { entry: [number,number,number]; target: [number,number,number] } | null;
+  setTrajectory: (trajectory: State['trajectory']) => void;
 }
 export const useWorkstation = create<State>((set, get) => ({
   series: [],
@@ -28,6 +30,7 @@ export const useWorkstation = create<State>((set, get) => ({
   issues: [],
   demo: false,
   hidePatient: true,
+  trajectory: null,
   view: initialView,
   setView: (v) => set((s) => ({ view: { ...s.view, ...v } })),
   select: (id) => {
@@ -36,6 +39,7 @@ export const useWorkstation = create<State>((set, get) => ({
       const f = s.frames[Math.floor(s.frames.length / 2)];
       set({
         active: id,
+        trajectory: null,
         view: {
           ...initialView,
           slice: Math.floor(s.frames.length / 2),
@@ -46,7 +50,7 @@ export const useWorkstation = create<State>((set, get) => ({
     }
   },
   setStudy: (series, issues, demo) => {
-    set({ series, issues, demo, active: "" });
+    set({ series, issues, demo, active: "", trajectory: null });
     if (series.length) get().select(series[0].id);
   },
   reset: () => {
@@ -63,6 +67,7 @@ export const useWorkstation = create<State>((set, get) => ({
     });
   },
   clear: () =>
-    set({ series: [], active: "", issues: [], demo: false, view: initialView }),
+    set({ series: [], active: "", issues: [], demo: false, view: initialView, trajectory: null }),
   setHidePatient: (hidePatient) => set({ hidePatient }),
+  setTrajectory: (trajectory) => set({ trajectory }),
 }));

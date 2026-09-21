@@ -1,14 +1,14 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Expand, Minimize, ScanLine } from "lucide-react";
 import { cachedPixels, loadPixels, warmSeries } from "../core/dicom/client";
-import { imageToWorld, orientationLabel } from "../core/geometry";
+import { imageToWorld, orientationLabel, worldToImage } from "../core/geometry";
 import { windowPixel } from "../core/dicom/parser";
 import { useWorkstation } from "../stores/workstation";
 import type { Frame, Series } from "../types/imaging";
 import { measure } from '../measurements';
 import type { Point,Shape } from '../measurements';
 export function StackViewport({ series }: { series: Series }) {
-  const { view, setView, hidePatient, demo } = useWorkstation();
+  const { view, setView, hidePatient, demo, trajectory } = useWorkstation();
   const frame = series.frames[view.slice];
   const canvas = useRef<HTMLCanvasElement>(null),
     host = useRef<HTMLDivElement>(null),
@@ -167,6 +167,9 @@ export function StackViewport({ series }: { series: Series }) {
       `${Number.isFinite(value) ? value.toFixed(1) : "Padding"} ${frame.calibratedHU ? "HU" : "intensity"}  ·  LPS ${world.map((x) => x.toFixed(1)).join(", ")} mm`,
     );
   };
+  const entryImage = trajectory ? worldToImage(frame, trajectory.entry) : null;
+  const targetImage = trajectory ? worldToImage(frame, trajectory.target) : null;
+  const trajectoryVisible = !!entryImage && !!targetImage && entryImage[1] >= -1 && entryImage[1] <= frame.rows && targetImage[1] >= -1 && targetImage[1] <= frame.rows;
   return (
     <section className={`viewport${fullscreen ? " is-fullscreen" : ""}`} ref={viewport}>
       <div className="measurement-tools"><label>Measure <select aria-label="Measurement shape" value={shape} onChange={e=>setShape(e.target.value as Shape|'')}><option value="">Off</option><option value="distance">Distance (2 points)</option><option value="polyline">Polyline</option><option value="angle">Angle (3 points, vertex second)</option><option value="rectangle">Rectangle ROI (2 corners)</option><option value="ellipse">Ellipse ROI (2 corners)</option></select></label>{shape&&<span>Click image points</span>}{shape==='polyline'&&<button disabled={points.length<2} onClick={()=>finish(points)}>Finish line</button>}<button onClick={()=>{setMeasurements([]);setPoints([]);}}>Clear measurements</button></div>
@@ -250,6 +253,7 @@ export function StackViewport({ series }: { series: Series }) {
       >
         <canvas ref={canvas} data-testid="image-canvas" />
         <svg className="measurement-overlay" width={size.width} height={size.height}>
+          {trajectoryVisible && entryImage && targetImage && <g className="trajectory-overlay"><line x1={left+(entryImage[0]+.5)*sx} y1={top+(entryImage[1]+.5)*sy} x2={left+(targetImage[0]+.5)*sx} y2={top+(targetImage[1]+.5)*sy}/><circle cx={left+(entryImage[0]+.5)*sx} cy={top+(entryImage[1]+.5)*sy} r="5"/><circle cx={left+(targetImage[0]+.5)*sx} cy={top+(targetImage[1]+.5)*sy} r="5"/><text x={left+(targetImage[0]+.5)*sx+8} y={top+(targetImage[1]+.5)*sy-8}>PCNL tract</text></g>}
           {measurements.filter(m=>m.frame===frame.id).map(m=>{const coords=m.points.map(p=>[left+(p[0]+.5)*sx,top+(p[1]+.5)*sy]);const [a,b]=coords;return <g key={m.id} stroke="#80f0d0" fill="none" strokeWidth="1.5">{m.shape==='rectangle'?<rect x={Math.min(a[0],b[0])} y={Math.min(a[1],b[1])} width={Math.abs(a[0]-b[0])} height={Math.abs(a[1]-b[1])}/>:m.shape==='ellipse'?<ellipse cx={(a[0]+b[0])/2} cy={(a[1]+b[1])/2} rx={Math.abs(a[0]-b[0])/2} ry={Math.abs(a[1]-b[1])/2}/>:<polyline points={coords.map(p=>p.join(',')).join(' ')}/>}<text x={a[0]+5} y={a[1]-8} fill="#b5ffde" stroke="#071410" strokeWidth=".3" fontSize="12">{m.text.split(' · ')[0]}</text></g>;})}
           {points.map((p,i)=><circle key={i} cx={left+(p[0]+.5)*sx} cy={top+(p[1]+.5)*sy} r="3" fill="#ffee8a"/>)}
         </svg>
