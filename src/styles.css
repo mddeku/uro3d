@@ -1168,6 +1168,8 @@ footer {
 .pcnl-warning {grid-column:1/-1;color:#e6b99b;line-height:1.5;padding-top:5px;}
 .mpr-panel {position:relative;flex:1;min-height:0;overflow:auto;padding:10px 16px;}
 .mpr-fullscreen {position:absolute;right:18px;top:10px;z-index:2;}
+.ai-candidate-list {display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;}
+.ai-candidate-list button.active {border-color:#8fe7cf;background:#28483f;color:#e8fff7;}
 .mpr-toolbar {display:flex;align-items:center;gap:6px;margin-bottom:10px;color:#9bbdb0;font-size:10px;}
 .mpr-toolbar button {padding:5px 9px;border:1px solid #38524c;background:#10191b;color:#a9c8bd;border-radius:3px;font-size:10px;}
 .mpr-toolbar button.active {background:#78d9c2;color:#071410;border-color:#78d9c2;}
