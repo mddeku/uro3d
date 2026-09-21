@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Expand, ScanLine } from "lucide-react";
+import { Expand, Minimize, ScanLine } from "lucide-react";
 import { cachedPixels, loadPixels, warmSeries } from "../core/dicom/client";
 import { imageToWorld, orientationLabel } from "../core/geometry";
 import { windowPixel } from "../core/dicom/parser";
@@ -11,7 +11,8 @@ export function StackViewport({ series }: { series: Series }) {
   const { view, setView, hidePatient, demo } = useWorkstation();
   const frame = series.frames[view.slice];
   const canvas = useRef<HTMLCanvasElement>(null),
-    host = useRef<HTMLDivElement>(null);
+    host = useRef<HTMLDivElement>(null),
+    viewport = useRef<HTMLElement>(null);
   const [size, setSize] = useState({ width: 800, height: 600 });
   const [decoded, setDecoded] = useState<{
     frame: Frame;
@@ -19,10 +20,20 @@ export function StackViewport({ series }: { series: Series }) {
   } | null>(null);
   const [error, setError] = useState("");
   const [smooth,setSmooth]=useState(true);
+  const [fullscreen,setFullscreen]=useState(false);
   const [ready,setReady]=useState(0);
   const [shape,setShape]=useState<Shape|''>('');
   const [points,setPoints]=useState<Point[]>([]);
   const [measurements,setMeasurements]=useState<{id:number;frame:string;shape:Shape;points:Point[];text:string}[]>([]);
+  useEffect(() => {
+    const onFullscreenChange = () => setFullscreen(document.fullscreenElement === viewport.current);
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, []);
+  const toggleFullscreen = async () => {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else await viewport.current?.requestFullscreen();
+  };
   useEffect(()=>setPoints([]),[frame,shape]);
   const finish=(p:Point[])=>{if(!shape||decoded?.frame!==frame)return;setMeasurements(m=>[...m,{id:Date.now(),frame:frame.id,shape,points:p,text:measure(frame,shape,p,decoded.pixels)}]);setPoints([]);};
   useEffect(()=>warmSeries(series.frames,()=>useWorkstation.getState().view.slice,(n)=>setReady(n)),[series, Math.floor(view.slice/16)]);
@@ -157,7 +168,7 @@ export function StackViewport({ series }: { series: Series }) {
     );
   };
   return (
-    <section className="viewport">
+    <section className={`viewport${fullscreen ? " is-fullscreen" : ""}`} ref={viewport}>
       <div className="measurement-tools"><label>Measure <select aria-label="Measurement shape" value={shape} onChange={e=>setShape(e.target.value as Shape|'')}><option value="">Off</option><option value="distance">Distance (2 points)</option><option value="polyline">Polyline</option><option value="angle">Angle (3 points, vertex second)</option><option value="rectangle">Rectangle ROI (2 corners)</option><option value="ellipse">Ellipse ROI (2 corners)</option></select></label>{shape&&<span>Click image points</span>}{shape==='polyline'&&<button disabled={points.length<2} onClick={()=>finish(points)}>Finish line</button>}<button onClick={()=>{setMeasurements([]);setPoints([]);}}>Clear measurements</button></div>
       <div className="viewport-title">
         <span>
@@ -170,6 +181,9 @@ export function StackViewport({ series }: { series: Series }) {
           onClick={() => setView({ zoom: 1, pan: [0, 0] })}
         >
           <Expand size={16} />
+        </button>
+        <button className="icon-button" aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"} onClick={toggleFullscreen}>
+          {fullscreen ? <Minimize size={16} /> : <Expand size={16} />}
         </button>
       </div>
       <div
