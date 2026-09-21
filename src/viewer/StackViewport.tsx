@@ -169,7 +169,9 @@ export function StackViewport({ series }: { series: Series }) {
   };
   const entryImage = trajectory ? worldToImage(frame, trajectory.entry) : null;
   const targetImage = trajectory ? worldToImage(frame, trajectory.target) : null;
-  const trajectoryVisible = !!entryImage && !!targetImage && entryImage[1] >= -1 && entryImage[1] <= frame.rows && targetImage[1] >= -1 && targetImage[1] <= frame.rows;
+  const normal=[frame.orientation[1]*frame.orientation[5]-frame.orientation[2]*frame.orientation[4],frame.orientation[2]*frame.orientation[3]-frame.orientation[0]*frame.orientation[5],frame.orientation[0]*frame.orientation[4]-frame.orientation[1]*frame.orientation[3]];
+  const planeDistance=(point:[number,number,number])=>Math.abs(point.reduce((sum,v,i)=>sum+(v-frame.position[i])*normal[i],0));
+  const trajectoryVisible = !!entryImage && !!targetImage && entryImage[1] >= -1 && entryImage[1] <= frame.rows && targetImage[1] >= -1 && targetImage[1] <= frame.rows && planeDistance(trajectory?.entry ?? [0,0,0]) <= Math.max(frame.thickness??0,frame.spacing[0],frame.spacing[1]) && planeDistance(trajectory?.target ?? [0,0,0]) <= Math.max(frame.thickness??0,frame.spacing[0],frame.spacing[1]);
   return (
     <section className={`viewport${fullscreen ? " is-fullscreen" : ""}`} ref={viewport}>
       <div className="measurement-tools"><label>Measure <select aria-label="Measurement shape" value={shape} onChange={e=>setShape(e.target.value as Shape|'')}><option value="">Off</option><option value="distance">Distance (2 points)</option><option value="polyline">Polyline</option><option value="angle">Angle (3 points, vertex second)</option><option value="rectangle">Rectangle ROI (2 corners)</option><option value="ellipse">Ellipse ROI (2 corners)</option></select></label>{shape&&<span>Click image points</span>}{shape==='polyline'&&<button disabled={points.length<2} onClick={()=>finish(points)}>Finish line</button>}<button onClick={()=>{setMeasurements([]);setPoints([]);}}>Clear measurements</button></div>
